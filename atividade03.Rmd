@@ -1,0 +1,142 @@
+---
+author: "Henrique Capatto RA 146406"
+title: "Exercício 3"
+output: html_document
+---
+# Geração de números aleatórios
+  
+  Execução do Terceiro exercício proposto
+
+## Método da Rejeição
+
+O exercício em questão porpõe gerar números aleatórios que sigam a função densidade da distribuição normal $\eta \sim (\mu ,\sigma ^{2})$:
+  
+  
+  $$
+  f_{X}(x) = \frac{1} {\sqrt{2\pi \sigma ^{2}}} e^{-(\frac{1}{2})(\frac{(x-\mu)^{2}}{\sigma^{2}})}, \forall x\in (-\infty ,\infty ), \forall \sigma\in (0,\infty )
+  $$
+  
+  Para gerar números aleatórios utilizando o **método da rejeição**, precisamos:
+  
+  1. Encontrar uma variável aleatória $Y$ com densidade
+  $g$,tal que;
+$$
+\frac{f(t)}{g(t)}\leq c, \forall t: f(t) > 0
+$$
+  2. Para cada variável aleatória a ser gerada;
+
+  a. Simule uma amostra $y$ a partir de $g$:
+
+  b. Simule $u$ com distribuição uniforme(0,1)
+  
+  c. Se $u<\frac{f(y)}{c*g(y)}$, então retorne $x=y$.Caso contrário, retorne ao Passo $2a$
+
+
+```{r d_rnom2}
+#modulo de x menos x ao quadrado dividido por 2 é menor ou igual a 1/2
+
+#faremos a geração pra normal 0, 1 depois aplicamos a transformaão pra
+#função que queremos 
+
+rnorm2= function(n,mu,sigma){
+  
+  c=sqrt(2*exp(1)/pi)
+
+  i=0
+  
+  Y <- numeric(n)
+  
+  #contr=0  
+
+  while(i < n){
+
+    unif01=runif(1)
+
+    unif02=runif(1)
+    
+    unif03=runif(1)
+
+    x=-log(unif01)
+
+    if(unif02  < exp((-(x-1)^2)/2) ){
+      
+      i <- i + 1
+      
+      if(unif03 <= 0.5){
+        x=-x
+      }
+      
+      Y[i]=mu+(x*sigma2)
+    }
+  
+    }
+
+
+  return (Y)
+}
+
+
+n <- 1e4
+
+mu <- 2
+
+sigma2 <- 4
+
+amostra=rnorm2(n,mu,sigma2)
+
+```
+
+A seguir, gráfico gerado, um histograma especificamente, a partir a amostra de 
+tamanho `r n`,sobreposto ao gráfico da função referida anteriormente.
+
+```{r}
+
+hist(amostra,col="antiquewhite2",border="black")
+curve(2*n*dnorm(x,mu,sigma2),xlim=c(-4*sigma2,4*sigma2),
+lw=1.5,col="darkslategray",add=TRUE)
+
+```
+
+```{r,echo=FALSE}
+alpha= .05
+```
+
+O teste que se utilizará para validar a hipótese será o Chi-Quadrado de Aderência, possuinte do objetivo de testar a adeuqabilidade de um modelo probabilistico em
+relação a um conjunto de dados observados. Faremos o teste utilizando os quartis téoricos e os orginários da amostra aleatória. A hipótese nula é a de que a amostra segue a distribuição deseja. A alternativa, é a de que não segue.
+
+Definição de $\alpha=$ `r alpha`
+ 
+OS quartis teóricos desta distribuição são determinados pela pontos em que a função acumulada atinge os valores pré-especificada dos quantis(0.25,0.5,0.75).
+
+```{r, results="hide", echo=FALSE}
+#q0=qnorm(0,mu,sigma2)
+
+q1=qnorm(0.25,mu,sigma2)
+
+q2=qnorm(0.5,mu,sigma2)
+
+q3=qnorm(0.75,mu,sigma2)
+
+```
+
+Os resultados acima são respectivamente, `r q1`, `r q2` e `r q3`.
+
+```{r,results="hide"}
+
+quartis = c(q1,q2,q3)
+
+resTmp = cut(amostra, quartis, include.lowest=TRUE)
+
+obs = as.integer(table(resTmp))
+
+esp = rep(n/4, 4)
+
+p_valor <- chisq.test(cbind(obs, esp))[3]
+
+prop.table(table(resTmp))
+```
+
+O p-valor resultante é: `r p_valor` 
+
+Logo, se  p-valor for $<0.05$, rejeitar-se-á a hipótese nula. Caso contrário, não se preterirá.
+
